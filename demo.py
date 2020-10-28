@@ -19,10 +19,9 @@ fps2 = param2[2]
 
 analyzer = analysis_functions.analyzer(height1, width1, height2, width2, c1, c2, np.transpose(ball_pos1), np.transpose(ball_pos2), fps1)
 
-analyzer.plot_trajectory(1)           # Plots all trajectories from camera 1/2 perspective
-# analyzer.plot_3d_point(1)             # Plots the trajectory of point 1
-# analyzer.visualize_3d_strokes(1)      # Plots one stroke at a time in 3d in point nbr 1
+analyzer.visualize_3d_strokes(1)      # Plots one stroke at a time in 3d in point nbr 1
 # analyzer.visualize_2d_strokes(1)      # Plots one stroke at a time in 2d in point nbr 1
-# analyzer.plot_bounce_points()         # Plots all calculated bounces on table
 # analyzer.animate_3d_path()            # Animates the 3d path taken in the whole video
 # analyzer.bounce_heatmap()             # Plots a heatmap of the detected bounces
+# analyzer.plot_3d_point(1)             # Plots the trajectory of point 1
+# analyzer.plot_trajectory(2)           # Plots all trajectories from camera 1/2 perspective

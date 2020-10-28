@@ -291,23 +291,6 @@ class analyzer:
                 else:
                     samecount = 0
 
-        # # Interpolate between points
-        # startid = 0
-        # endid = 0
-        # for i in range(np.size(self.p3d,0)-1):
-        #     if self.p3d[i,0]==self.p3d[i+1,0] and self.p3d[i,1]==self.p3d[i+1,1] and self.p3d[i,2]==self.p3d[i+1,2]:
-        #         endid = i+1
-        #     elif self.w1>endid>startid:
-        #         diff = endid-startid
-        #         for framenbr in range(diff):
-        #             self.p3d[startid+framenbr+1,0] = self.p3d[startid,0] + (self.p3d[endid+1,0] - self.p3d[startid,0]) * ((framenbr+1)/(diff+1))
-        #             self.p3d[startid+framenbr+1,1] = self.p3d[startid,1] + (self.p3d[endid+1,1] - self.p3d[startid,1]) * ((framenbr+1)/(diff+1))
-        #             self.p3d[startid+framenbr+1,2] = self.p3d[startid,2] + (self.p3d[endid+1,2] - self.p3d[startid,2]) * ((framenbr+1)/(diff+1))
-        #         startid = i+1
-        #     else:
-        #         startid = i + 1
-        #         endid = i + 1
-
         # Extract strokes in every point
         self.points,self.times = divide_into_points(self.p3d)
 
