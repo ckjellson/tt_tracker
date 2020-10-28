@@ -6,6 +6,7 @@ This project is not optimized for extended use, but rather showcases an idea for
 
 1. [Demo](#demo)
 2. [How to use](#usage)
+3. [Further improvements](#further improvements)
 
 ## Demo
 
@@ -76,3 +77,9 @@ After doing this the videos will be processed, and the detected position in each
 ### Step 5: Analyze result (demo.py)
 
 In demo.py set vidname to the name of your instance, and then choose to run the desired function.
+
+## Further improvements
+
+Implement automatic detection of table corners and net. (Problem if background contains white lines)
+
+Detect patterns, points of contact, etc.
