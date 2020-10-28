@@ -498,7 +498,7 @@ class analyzer:
         plt.show()
 
     # Calculate velocity during flight
-    def calc_velocity(self,plotting=False):
+    def calc_velocity(self,plotting=False): #### DEPRECATED
         dt = 1.0/self.fps
         vel = []
         time = [i+3 for i in range(len(self.p3d)-4)]
