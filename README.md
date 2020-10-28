@@ -4,6 +4,9 @@ Tracking a table tennis ball in 3D using two cameras, and analyzing the result. 
 
 This project is not optimized for extended use, but rather showcases an idea for how OpenCV and computer vision can in a simple way be applied to analyze table tennis games.
 
+1. [Demo](#demo)
+2. [How to use](#usage)
+
 ## Demo
 
 Uncomment a desired function furthest down in demo.py and run the script. This will create a "analyzer"-object. The following functions applied to this object are currently supported:
