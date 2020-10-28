@@ -1,6 +1,8 @@
 # tt_tracker
 
-Tracking a table tennis ball in 3D using two cameras, and analyzing the result. Uses OpenCV and computer vision techniques to identify points, strokes, bounces, etc. This repository is not optimized for extended use, but rather showcases an idea for how OpenCV and computer vision can in a simple way be applied to analyze table tennis games.
+Tracking a table tennis ball in 3D using two cameras, and analyzing the result. Uses OpenCV and computer vision techniques to identify points, strokes, bounces, etc.
+
+This project is not optimized for extended use, but rather showcases an idea for how OpenCV and computer vision can in a simple way be applied to analyze table tennis games.
 
 ## Demo
 
