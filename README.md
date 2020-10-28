@@ -8,13 +8,13 @@ Uncomment a desired function furthest down in demo.py and run the script. This w
 
 ### visualize_3d_strokes()
 
-Plots the path of one detected stroke at a time in 3d, and the camera positions.
+Plots the path of one detected stroke at a time in 3d, detected bounce positions, and the camera positions.
 
 ![3dstroke](https://user-images.githubusercontent.com/37980849/97466582-8fbd8e80-1943-11eb-95f2-41e10e0acb18.PNG)
 
 ### visualize_2d_strokes()
 
-Plots the path of one detected stroke at a time in 2d.
+Plots the path of one detected stroke at a time in 2d and detected bounce positions.
 
 ![2dstroke](https://user-images.githubusercontent.com/37980849/97466681-abc13000-1943-11eb-9ff4-0d739da60e8c.PNG)
 
