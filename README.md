@@ -10,6 +10,8 @@ This project is not optimized for extended use, but rather showcases an idea for
 
 ## Demo
 
+The data visualized below is the output from running the algorithm on two videos that are not uploaded here.
+
 Uncomment a desired function furthest down in demo.py and run the script. This will create an "analyzer"-object. The following functions applied to this object are currently supported:
 
 ### visualize_3d_strokes()
