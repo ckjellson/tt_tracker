@@ -3,6 +3,10 @@ cv2.setUseOptimized(True)
 import numpy as np
 import time
 
+'''
+Functions for ball detection in each frame of a video
+'''
+
 test = False
 fgbg = cv2.createBackgroundSubtractorMOG2(history=15,varThreshold=50, detectShadows=False)
 kernel = np.ones((2,2),np.uint8)
@@ -27,6 +31,57 @@ params.filterByInertia = True
 params.minInertiaRatio = 0.08
 # Create a detector with the parameters
 detector = cv2.SimpleBlobDetector_create(params)
+
+def read_video(path,flipped):
+    '''
+    Main function
+    Args:
+        path (str):         path to video
+        flipped (bool):     true if a video is read in upside-down
+    Returns:
+        height (int):           height of video frames
+        width (int):            width of video frames
+        ball_pos (np.array):    detected positions of balls in each frame
+        fps (int):              frames per second
+    '''
+
+    cap = cv2.VideoCapture(path)
+    nbr_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+    height, width, ball_pos = track_ball(cap, nbr_frames,flipped)
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    for i in range(ball_pos.shape[0]):
+        ball_pos[i, 1] = height - ball_pos[i, 1]-1
+
+    return height, width, ball_pos, fps
+
+# Creates trace of ball in image
+def track_ball(cap,nbr_frames,flipped):
+    ball_pos = np.ones([nbr_frames,3])
+    height = 0
+    width = 0
+    # Iterate through frames
+    for i in range(nbr_frames):
+        ret, frame = cap.read()
+        if flipped:
+            frame = cv2.flip(frame,0)
+            frame = cv2.flip(frame,1)
+        if i==0:
+            height,width,channels = frame.shape
+        if ret:
+            if width>1280:
+                frame = cv2.resize(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)), interpolation=cv2.INTER_AREA)
+                ball_pos[i,0:2] = find_ball(frame, height, width)*2
+            else:
+                ball_pos[i, 0:2] = find_ball(frame, height, width)
+        if i%100==0:
+            print(str(i) + ' / ' + str(nbr_frames))
+    return height, width, ball_pos
+
 
 # Finds ball position in orig
 def find_ball(frame,height,width):
@@ -61,44 +116,6 @@ def find_ball(frame,height,width):
         cv2.imshow('gray', framecopy)
         cv2.waitKey()
     return pos
-
-# Creates trace of ball in image
-def track_ball(cap,nbr_frames,flipped):
-    ball_pos = np.ones([nbr_frames,3])
-    height = 0
-    width = 0
-    for i in range(nbr_frames):
-        ret, frame = cap.read()
-        if flipped:
-            frame = cv2.flip(frame,0)
-            frame = cv2.flip(frame,1)
-        if i==0:
-            height,width,channels = frame.shape
-        if ret:
-            if width>1280:
-                frame = cv2.resize(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)), interpolation=cv2.INTER_AREA)
-                ball_pos[i,0:2] = find_ball(frame, height, width)*2
-            else:
-                ball_pos[i, 0:2] = find_ball(frame, height, width)
-        if i%100==0:
-            print(str(i) + ' / ' + str(nbr_frames))
-    return height, width, ball_pos
-
-# Reads video to generate ball trace and video data
-def read_video(path,flipped):
-    cap = cv2.VideoCapture(path)
-    nbr_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-    height, width, ball_pos = track_ball(cap, nbr_frames,flipped)
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-    for i in range(ball_pos.shape[0]):
-        ball_pos[i, 1] = height - ball_pos[i, 1]-1
-
-    return height, width, ball_pos, fps
 
 if test:
     vidpath = 'videos/outside2.mp4'

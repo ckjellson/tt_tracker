@@ -1,7 +1,16 @@
 import numpy as np
 import analysis_functions
 
+'''
+Creates an "analyzer" object for visualization of processed video data
+
+Specify:
+    vidname: name of the instance to use
+'''
+
+
 vidname = 'outside'
+
 c1 = np.load('data/'+vidname+'/c1.npy')
 c2 = np.load('data/'+vidname+'/c2.npy')
 
@@ -19,6 +28,7 @@ fps2 = param2[2]
 
 analyzer = analysis_functions.analyzer(height1, width1, height2, width2, c1, c2, np.transpose(ball_pos1), np.transpose(ball_pos2), fps1)
 
+# Available functions to run:
 analyzer.visualize_3d_strokes(1)      # Plots one stroke at a time in 3d in point nbr 1
 # analyzer.visualize_2d_strokes(1)      # Plots one stroke at a time in 2d in point nbr 1
 # analyzer.animate_3d_path()            # Animates the 3d path taken in the whole video

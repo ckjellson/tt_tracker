@@ -4,6 +4,15 @@ import process_video as pv
 import time
 import os
 
+'''
+Loads two synced videos and generates an interface for choosing corner and net
+positions, and then processes the videos, i.e. detects the position of a table
+tennis ball in each frame.
+
+Specify:
+    vidname: name of the instance to be processed
+'''
+
 vidname = 'outside'
 flipped1 = False        # Change if the video is upside down
 flipped2 = False

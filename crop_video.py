@@ -1,7 +1,15 @@
 import cv2
 import numpy as np
 
-# Everything commented away has to do with breakpoints, shouldn't have to do this!
+'''
+Loads two videos and generates an interface to crop these to equal length
+and being synced in time.
+
+Specify:
+    path1: path to first video
+    path2: path to second video
+    vidname: name of the instance to be created
+'''
 
 path1 = "videos_original\out_a_full.mp4"
 path2 = "videos_original\out_b_full.mp4"
@@ -35,8 +43,6 @@ while True:
 clip1 = cv2.VideoWriter('videos/' + vidname + '1.mp4',cv2.VideoWriter_fourcc(*'mp4v'), 30.0, (width,height))
 clip2 = cv2.VideoWriter('videos/' + vidname + '2.mp4',cv2.VideoWriter_fourcc(*'mp4v'), 30.0, (width,height))
 
-accum = 1
-capture = True
 for i in range(min([nbr_frames1, nbr_frames2])):
     _, f1 = cap1.read()
     _, f2 = cap2.read()

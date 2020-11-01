@@ -11,218 +11,55 @@ from scipy.ndimage.filters import gaussian_filter
 xtable = 2.74
 ytable = 1.525
 
-# RQ-factorization
-def rq(a):
-    [m,n] = a.shape
-    e = np.eye(m)
-    p = np.fliplr(e)
-    [q0,r0] = qr(np.matmul(p,np.matmul(np.transpose(a[:,0:m]),p)))
-    r = np.matmul(p,np.matmul(np.transpose(r0),p))
-    q = np.matmul(p, np.matmul(np.transpose(q0), p))
-    fix = np.diag(np.sign(np.diag(r)))
-    r = np.matmul(r,fix)
-    q = np.matmul(fix,q)
-    if n>m:
-        q = np.concatenate((q,np.matmul(np.linalg.inv(r),a[:,m:n])),axis=1)
-    return r,q
-
-# Pointwise division with last coordinate
-def pflat(x):
-    y = np.copy(x)
-    for i in range(x.shape[1]):
-        y[:,i] = y[:,i]/y[x.shape[0]-1,i]
-    return y
-
-# Create artificial ball movement
-def create_trace(P1,P2):
-    bp3d1 = [[x/33-0.12,1.525-x**2/10000,0.3*abs(math.cos(2*math.pi*x/100)),1] for x in range(100)]
-    bp3d2 = [[bp3d1[len(bp3d1)-1][0]-0.01-x/33,bp3d1[len(bp3d1)-1][1], 0.3 * abs(math.cos(2 * math.pi * x / 350)),1] for x in range(100)]
-    bp3d = bp3d1 + bp3d2
-    bp3d = np.transpose(np.array(bp3d))
-    p1 = pflat(np.matmul(P1,bp3d))
-    p2 = pflat(np.matmul(P2,bp3d))
-    return np.transpose(p1),np.transpose(p2)
-
-# Create artificial table position
-def table_position(height,width):
-    add1 = 0
-    add2 = 40
-    p1 = [[2*width / 10, height*4/10, 1],
-          [8*width/10, height*4/10, 1],
-          [9 * width / 10, height / 10, 1],
-          [1 * width / 10, height / 10, 1],
-          [5 * width / 10, height / 10+add1, 1],
-          [5 * width / 10, height *4/ 10+add2, 1]]
-    p2 = [[480,560, 1],
-          [1040,360, 1],
-          [800, 80, 1],
-          [160,360, 1],
-          [420,260, 1],
-          [764, 540, 1]]
-    return np.array(p1), np.array(p2)
-
-# Find turns made by ball, returns all indexes in ball-position vectors
-def find_turns(points):
-    turns = [0]
-    prevdir = np.sign(points[1,0]-points[0,0])
-    for i in range(points.shape[0]-1):
-        if points[i,0]!=0 and points[i+1,0]!=0:
-            x0 = points[i,0]
-            x1 = points[i+1,0]
-            dir = np.sign(x1-x0)
-            if dir==-prevdir and dir!=0:
-                turns.append(i)
-                prevdir = dir
-            elif prevdir==0:
-                prevdir=dir
-    turns.append(points.shape[0]-1)
-    return turns
-
-# Calculates camera matrix from a set of 6 point correspondences
-def calc_P(p3d,p2d):
-    npoints = p2d.shape[1]
-    mean = np.mean(p2d,1)
-    std = np.std(p2d,axis=1)
-    N = np.array([[1/std[0],0,-mean[0]/std[0]],
-                  [0,1/std[1],-mean[1]/std[1]],
-                  [0,0,1]])
-    p2dnorm = np.matmul(N,p2d)
-    M = np.zeros([3*npoints,12+npoints])
-    for i in range(npoints):
-        M[3*i,0:4] = p3d[:,i]
-        M[3*i+1,4:8] = p3d[:,i]
-        M[3*i+2,8:12] = p3d[:,i]
-        M[3*i:3*i+3,12+i] = -p2dnorm[:,i]
-    [U,S,V] = svd(M)
-    v = V[V.shape[0]-1,:]
-    P = np.reshape(v[0:12],[3,4])
-    testsign = np.matmul(P,p3d[:,1])
-    if testsign[2]<0:
-        P = -P
-        print('changed sign of P')
-    P = np.matmul(np.linalg.inv(N),P)
-    return P
-
-# Checks if point is zero and should be ignored
-def is_zero(p):
-    if p[0]==0 and p[1]==0:
-        return True
-    else:
-        return False
-
-# Checks if point is within reasonable range from table
-def inside_range(point):
-    return -1<point[0]<3.74 and -1<point[1]<2.525 and -1<point[2]<3
-
-# Divides 3d positions into tt-points based on existence of ball
-def divide_into_points(p3d):
-    ballfound = np.zeros(p3d.shape[0])
-    ballfound[p3d[:, 0] != 0] = 1
-    ma = np.zeros(p3d.shape[0])
-    kern = 30
-    thresh = 0.5
-    idxs = [0]
-    for i in range(p3d.shape[0]):
-        vec = ballfound[max(0, i - kern):min(p3d.shape[0] - 1, i + kern)]
-        ma[i] = sum(vec) / vec.shape[0]
-        if i>0 and (ma[i-1]<=thresh<ma[i] or ma[i-1]>thresh>=ma[i]):
-            idxs.append(i)
-    idxs.append(p3d.shape[0])
-    points = np.vsplit(p3d,idxs)
-    if ma[0]<thresh:
-        toremove = 0
-    else:
-        toremove = 1
-    actualpoints = []
-    actualtimes = []
-    for i in range(len(points)):
-        if (i+toremove)%2==0:
-            removedbefore = 0
-            removedafter = 0
-            for j in range(points[i].shape[0]):
-                if points[i][j,0]==0:
-                    removedbefore += 1
-                else:
-                    break
-            for j in range(points[i].shape[0]):
-                if points[i][-(1+j), 0] == 0:
-                    removedafter += 1
-                else:
-                    break
-            if removedafter>0:
-                toadd = points[i][removedbefore:-removedafter,:]
-            else:
-                toadd = points[i][removedbefore:,:]
-            if sum(toadd[:,0]>0)>3:
-                actualpoints.append(toadd)
-                actualtimes.append([idxs[i-1]+removedbefore,idxs[i]-removedafter])
-    # plt.plot(range(ballfound.shape[0]), ballfound)
-    # plt.plot(range(ballfound.shape[0]), ma)
-    # plt.show()
-    return actualpoints,actualtimes
-
-# Divides a point into a number of strokes based on x-direction of ball
-def divide_into_strokes(points):
-    strokes = []
-    turns = find_turns(points)
-    for i in range(len(turns)-1):
-        strokes.append(points[turns[i]:turns[i+1]])
-    return strokes
-
-# Finds the bounce(s) for each stroke
-def find_bounces(points):
-    bounces = []
-    for point in points:
-        point_bounces = []
-        shots_made = 0
-        for stroke in point:
-            if stroke.shape[0] > 10:
-                z = stroke[:, 2]
-                minimas = argrelextrema(z, np.less)[0]
-                if len(minimas) == 0:
-                    point_bounces.append(np.reshape(np.array([0, 0, 0]), [1, 3]))
-                elif shots_made == 0:
-                    values = z[minimas]
-                    argmin1 = np.argmin(values)
-                    values[argmin1] = 5
-                    argmin2 = np.argmin(values)
-                    args = [minimas[argmin1], minimas[argmin2]]
-                    bounce = np.vstack((stroke[min(args), :], stroke[max(args), :]))
-                    bounce[0, 2] = 0
-                    bounce[1, 2] = 0
-                    point_bounces.append(bounce)
-                    shots_made += 1
-                else:
-                    values = z[minimas]
-                    argmin = np.argmin(values)
-                    bounce = np.reshape(stroke[minimas[argmin], :], [1, 3])
-                    bounce[0, 2] = 0
-                    point_bounces.append(bounce)
-            else:
-                point_bounces.append(np.reshape(np.array([0, 0, 0]), [1, 3]))
-        bounces.append(point_bounces)
-    return bounces
-
-# Interpolate positions of missing points
-def interpolate_missing(a,b,c,d,t0,t1,t2,t3):
-    matinv = np.linalg.inv([[1,t0,t0**2,t0**3],
-                        [1,t1,t1**2,t1**3],
-                        [1,t2,t2**2,t2**3],
-                        [1,t3,t3**2,t3**3]])
-    coeff = np.zeros([3,4])
-    for i in range(3):
-        values = np.array([a[i],b[i],c[i],d[i]])
-        coeff[i,:] = matinv@values
-    missing = np.zeros([t3-t0+1,3])
-    for i in range(missing.shape[0]):
-        missing[i,:] = coeff@np.array([1,t0+i,(t0+i)**2,(t0+i)**3])
-    return missing
-
-# Class for analyzing data from two videos
 class analyzer:
 
+    '''
+    Analyzer class for applying triangulation, finding 3D tracks, and visualization
+
+    Args:
+        height1 (int): Height dimension of camera 1
+        height2 (int): Height dimension of camera 2
+        width1 (int): Width dimension of camera 1
+        width2 (int): Width dimension of camera 2
+        corners1 (np.array): Positions of corners and net in
+                                camera 1
+        corners2 (np.array): Positions of corners and net in
+                                camera 2
+        ball_pos_1 (np.array): Detected positions of ball in
+                                camera 1
+        ball_pos_2 (np.array): Detected positions of ball in
+                                camera 2
+        fps (int): Frames per second used in both cameras
+
+    Attributes:
+        fps     Frames per second
+        h1      Height camera 1
+        h2      Height camera 2
+        w1      Width camera 1
+        w2      Width camera 2
+        bp1     Ball positions camera 1
+        bp2     Ball positions camera 2
+        pc1     Corner positions camera 1
+        pc2     Corner positions camera 2
+        c3d     3D corner positions
+        P1      Camera matrix 1
+        P2      Camera matrix 2
+                Factorizations of camera matrices:
+        K1
+        K2
+        A1
+        A2
+                Normalized camera matrices:
+        P1norm
+        P2norm
+                Detected points strokes etc:
+        points
+        times
+        bounces
+    '''
+
     # Initiate and calculate cameras, points, etc.
-    def __init__(self, height1,width1, height2,width2,corners1,corners2,ball_pos_1,ball_pos_2,fps):#,breakpoints):
+    def __init__(self, height1,width1, height2,width2,corners1,corners2,ball_pos_1,ball_pos_2,fps):
         self.fps = fps
         self.h1 = height1
         self.w1 = width1
@@ -572,6 +409,213 @@ class analyzer:
         elif self.bp1.shape[0]<self.bp2.shape[0]:
             for i in range(-self.bp1.shape[0]+self.bp2.shape[0]):
                 self.bp1 = np.append(self.bp1,np.array([[0,0,1]]),axis=0)
+
+# RQ-factorization
+def rq(a):
+    [m,n] = a.shape
+    e = np.eye(m)
+    p = np.fliplr(e)
+    [q0,r0] = qr(np.matmul(p,np.matmul(np.transpose(a[:,0:m]),p)))
+    r = np.matmul(p,np.matmul(np.transpose(r0),p))
+    q = np.matmul(p, np.matmul(np.transpose(q0), p))
+    fix = np.diag(np.sign(np.diag(r)))
+    r = np.matmul(r,fix)
+    q = np.matmul(fix,q)
+    if n>m:
+        q = np.concatenate((q,np.matmul(np.linalg.inv(r),a[:,m:n])),axis=1)
+    return r,q
+
+# Pointwise division with last coordinate
+def pflat(x):
+    y = np.copy(x)
+    for i in range(x.shape[1]):
+        y[:,i] = y[:,i]/y[x.shape[0]-1,i]
+    return y
+
+# Create artificial ball movement
+def create_trace(P1,P2):
+    bp3d1 = [[x/33-0.12,1.525-x**2/10000,0.3*abs(math.cos(2*math.pi*x/100)),1] for x in range(100)]
+    bp3d2 = [[bp3d1[len(bp3d1)-1][0]-0.01-x/33,bp3d1[len(bp3d1)-1][1], 0.3 * abs(math.cos(2 * math.pi * x / 350)),1] for x in range(100)]
+    bp3d = bp3d1 + bp3d2
+    bp3d = np.transpose(np.array(bp3d))
+    p1 = pflat(np.matmul(P1,bp3d))
+    p2 = pflat(np.matmul(P2,bp3d))
+    return np.transpose(p1),np.transpose(p2)
+
+# Create artificial table position
+def table_position(height,width):
+    add1 = 0
+    add2 = 40
+    p1 = [[2*width / 10, height*4/10, 1],
+          [8*width/10, height*4/10, 1],
+          [9 * width / 10, height / 10, 1],
+          [1 * width / 10, height / 10, 1],
+          [5 * width / 10, height / 10+add1, 1],
+          [5 * width / 10, height *4/ 10+add2, 1]]
+    p2 = [[480,560, 1],
+          [1040,360, 1],
+          [800, 80, 1],
+          [160,360, 1],
+          [420,260, 1],
+          [764, 540, 1]]
+    return np.array(p1), np.array(p2)
+
+# Find turns made by ball, returns all indexes in ball-position vectors
+def find_turns(points):
+    turns = [0]
+    prevdir = np.sign(points[1,0]-points[0,0])
+    for i in range(points.shape[0]-1):
+        if points[i,0]!=0 and points[i+1,0]!=0:
+            x0 = points[i,0]
+            x1 = points[i+1,0]
+            dir = np.sign(x1-x0)
+            if dir==-prevdir and dir!=0:
+                turns.append(i)
+                prevdir = dir
+            elif prevdir==0:
+                prevdir=dir
+    turns.append(points.shape[0]-1)
+    return turns
+
+# Calculates camera matrix from a set of 6 point correspondences
+def calc_P(p3d,p2d):
+    npoints = p2d.shape[1]
+    mean = np.mean(p2d,1)
+    std = np.std(p2d,axis=1)
+    N = np.array([[1/std[0],0,-mean[0]/std[0]],
+                  [0,1/std[1],-mean[1]/std[1]],
+                  [0,0,1]])
+    p2dnorm = np.matmul(N,p2d)
+    M = np.zeros([3*npoints,12+npoints])
+    for i in range(npoints):
+        M[3*i,0:4] = p3d[:,i]
+        M[3*i+1,4:8] = p3d[:,i]
+        M[3*i+2,8:12] = p3d[:,i]
+        M[3*i:3*i+3,12+i] = -p2dnorm[:,i]
+    [U,S,V] = svd(M)
+    v = V[V.shape[0]-1,:]
+    P = np.reshape(v[0:12],[3,4])
+    testsign = np.matmul(P,p3d[:,1])
+    if testsign[2]<0:
+        P = -P
+        print('changed sign of P')
+    P = np.matmul(np.linalg.inv(N),P)
+    return P
+
+# Checks if point is zero and should be ignored
+def is_zero(p):
+    if p[0]==0 and p[1]==0:
+        return True
+    else:
+        return False
+
+# Checks if point is within reasonable range from table
+def inside_range(point):
+    return -1<point[0]<3.74 and -1<point[1]<2.525 and -1<point[2]<3
+
+# Divides 3d positions into tt-points based on existence of ball
+def divide_into_points(p3d):
+    ballfound = np.zeros(p3d.shape[0])
+    ballfound[p3d[:, 0] != 0] = 1
+    ma = np.zeros(p3d.shape[0])
+    kern = 30
+    thresh = 0.5
+    idxs = [0]
+    for i in range(p3d.shape[0]):
+        vec = ballfound[max(0, i - kern):min(p3d.shape[0] - 1, i + kern)]
+        ma[i] = sum(vec) / vec.shape[0]
+        if i>0 and (ma[i-1]<=thresh<ma[i] or ma[i-1]>thresh>=ma[i]):
+            idxs.append(i)
+    idxs.append(p3d.shape[0])
+    points = np.vsplit(p3d,idxs)
+    if ma[0]<thresh:
+        toremove = 0
+    else:
+        toremove = 1
+    actualpoints = []
+    actualtimes = []
+    for i in range(len(points)):
+        if (i+toremove)%2==0:
+            removedbefore = 0
+            removedafter = 0
+            for j in range(points[i].shape[0]):
+                if points[i][j,0]==0:
+                    removedbefore += 1
+                else:
+                    break
+            for j in range(points[i].shape[0]):
+                if points[i][-(1+j), 0] == 0:
+                    removedafter += 1
+                else:
+                    break
+            if removedafter>0:
+                toadd = points[i][removedbefore:-removedafter,:]
+            else:
+                toadd = points[i][removedbefore:,:]
+            if sum(toadd[:,0]>0)>3:
+                actualpoints.append(toadd)
+                actualtimes.append([idxs[i-1]+removedbefore,idxs[i]-removedafter])
+    # plt.plot(range(ballfound.shape[0]), ballfound)
+    # plt.plot(range(ballfound.shape[0]), ma)
+    # plt.show()
+    return actualpoints,actualtimes
+
+# Divides a point into a number of strokes based on x-direction of ball
+def divide_into_strokes(points):
+    strokes = []
+    turns = find_turns(points)
+    for i in range(len(turns)-1):
+        strokes.append(points[turns[i]:turns[i+1]])
+    return strokes
+
+# Finds the bounce(s) for each stroke
+def find_bounces(points):
+    bounces = []
+    for point in points:
+        point_bounces = []
+        shots_made = 0
+        for stroke in point:
+            if stroke.shape[0] > 10:
+                z = stroke[:, 2]
+                minimas = argrelextrema(z, np.less)[0]
+                if len(minimas) == 0:
+                    point_bounces.append(np.reshape(np.array([0, 0, 0]), [1, 3]))
+                elif shots_made == 0:
+                    values = z[minimas]
+                    argmin1 = np.argmin(values)
+                    values[argmin1] = 5
+                    argmin2 = np.argmin(values)
+                    args = [minimas[argmin1], minimas[argmin2]]
+                    bounce = np.vstack((stroke[min(args), :], stroke[max(args), :]))
+                    bounce[0, 2] = 0
+                    bounce[1, 2] = 0
+                    point_bounces.append(bounce)
+                    shots_made += 1
+                else:
+                    values = z[minimas]
+                    argmin = np.argmin(values)
+                    bounce = np.reshape(stroke[minimas[argmin], :], [1, 3])
+                    bounce[0, 2] = 0
+                    point_bounces.append(bounce)
+            else:
+                point_bounces.append(np.reshape(np.array([0, 0, 0]), [1, 3]))
+        bounces.append(point_bounces)
+    return bounces
+
+# Interpolate positions of missing points
+def interpolate_missing(a,b,c,d,t0,t1,t2,t3):
+    matinv = np.linalg.inv([[1,t0,t0**2,t0**3],
+                        [1,t1,t1**2,t1**3],
+                        [1,t2,t2**2,t2**3],
+                        [1,t3,t3**2,t3**3]])
+    coeff = np.zeros([3,4])
+    for i in range(3):
+        values = np.array([a[i],b[i],c[i],d[i]])
+        coeff[i,:] = matinv@values
+    missing = np.zeros([t3-t0+1,3])
+    for i in range(missing.shape[0]):
+        missing[i,:] = coeff@np.array([1,t0+i,(t0+i)**2,(t0+i)**3])
+    return missing
 
 # h = 700
 # w = 1280
