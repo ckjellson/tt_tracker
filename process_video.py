@@ -7,7 +7,7 @@ import time
 Functions for ball detection in each frame of a video
 '''
 
-test = False
+test = False    # Used to test functions for improvement
 fgbg = cv2.createBackgroundSubtractorMOG2(history=15,varThreshold=50, detectShadows=False)
 kernel = np.ones((2,2),np.uint8)
 # Setup SimpleBlobDetector parameters.
@@ -61,6 +61,12 @@ def read_video(path,flipped):
 
 # Creates trace of ball in image
 def track_ball(cap,nbr_frames,flipped):
+    '''
+    :param cap:         Video object
+    :param nbr_frames:  Number of frames
+    :param flipped:     true if video flipped
+    :return:            video height,width and detected ball positions
+    '''
     ball_pos = np.ones([nbr_frames,3])
     height = 0
     width = 0
@@ -85,6 +91,12 @@ def track_ball(cap,nbr_frames,flipped):
 
 # Finds ball position in orig
 def find_ball(frame,height,width):
+    '''
+    :param frame:
+    :param height:
+    :param width:
+    :return: pos:       2D position of detected ball ([0,0] if none detected)
+    '''
     gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     # t1 = time.time()
     gray[cv2.medianBlur(fgbg.apply(frame),ksize=5)==0] = 0

@@ -412,6 +412,10 @@ class analyzer:
 
 # RQ-factorization
 def rq(a):
+    '''
+    :param a:       Original matrix
+    :return: r,q    rq=a
+    '''
     [m,n] = a.shape
     e = np.eye(m)
     p = np.fliplr(e)
@@ -432,36 +436,12 @@ def pflat(x):
         y[:,i] = y[:,i]/y[x.shape[0]-1,i]
     return y
 
-# Create artificial ball movement
-def create_trace(P1,P2):
-    bp3d1 = [[x/33-0.12,1.525-x**2/10000,0.3*abs(math.cos(2*math.pi*x/100)),1] for x in range(100)]
-    bp3d2 = [[bp3d1[len(bp3d1)-1][0]-0.01-x/33,bp3d1[len(bp3d1)-1][1], 0.3 * abs(math.cos(2 * math.pi * x / 350)),1] for x in range(100)]
-    bp3d = bp3d1 + bp3d2
-    bp3d = np.transpose(np.array(bp3d))
-    p1 = pflat(np.matmul(P1,bp3d))
-    p2 = pflat(np.matmul(P2,bp3d))
-    return np.transpose(p1),np.transpose(p2)
-
-# Create artificial table position
-def table_position(height,width):
-    add1 = 0
-    add2 = 40
-    p1 = [[2*width / 10, height*4/10, 1],
-          [8*width/10, height*4/10, 1],
-          [9 * width / 10, height / 10, 1],
-          [1 * width / 10, height / 10, 1],
-          [5 * width / 10, height / 10+add1, 1],
-          [5 * width / 10, height *4/ 10+add2, 1]]
-    p2 = [[480,560, 1],
-          [1040,360, 1],
-          [800, 80, 1],
-          [160,360, 1],
-          [420,260, 1],
-          [764, 540, 1]]
-    return np.array(p1), np.array(p2)
-
 # Find turns made by ball, returns all indexes in ball-position vectors
 def find_turns(points):
+    '''
+    :param points:  Points
+    :return: turns: Indexes of turns in points
+    '''
     turns = [0]
     prevdir = np.sign(points[1,0]-points[0,0])
     for i in range(points.shape[0]-1):
@@ -479,6 +459,11 @@ def find_turns(points):
 
 # Calculates camera matrix from a set of 6 point correspondences
 def calc_P(p3d,p2d):
+    '''
+    :param p3d:     3D known points
+    :param p2d:     Corresponding 2D points in cameras
+    :return:        Camera matrix
+    '''
     npoints = p2d.shape[1]
     mean = np.mean(p2d,1)
     std = np.std(p2d,axis=1)
@@ -504,6 +489,10 @@ def calc_P(p3d,p2d):
 
 # Checks if point is zero and should be ignored
 def is_zero(p):
+    '''
+    :param p:   Point
+    :return:    true if both coordinates are zero
+    '''
     if p[0]==0 and p[1]==0:
         return True
     else:
@@ -511,10 +500,19 @@ def is_zero(p):
 
 # Checks if point is within reasonable range from table
 def inside_range(point):
+    '''
+    :param point:   Detected points
+    :return:        Indexes of point positions inside a range
+    '''
     return -1<point[0]<3.74 and -1<point[1]<2.525 and -1<point[2]<3
 
 # Divides 3d positions into tt-points based on existence of ball
 def divide_into_points(p3d):
+    '''
+    :param p3d:     3D-points
+    :return:    actualpoints:   Points played in instance
+                actualtimes:    Times of starts and ends of each points in videos
+    '''
     ballfound = np.zeros(p3d.shape[0])
     ballfound[p3d[:, 0] != 0] = 1
     ma = np.zeros(p3d.shape[0])
@@ -562,6 +560,10 @@ def divide_into_points(p3d):
 
 # Divides a point into a number of strokes based on x-direction of ball
 def divide_into_strokes(points):
+    '''
+    :param points:      Points played in instance
+    :return: strokes:   Divided points into strokes
+    '''
     strokes = []
     turns = find_turns(points)
     for i in range(len(turns)-1):
@@ -570,16 +572,22 @@ def divide_into_strokes(points):
 
 # Finds the bounce(s) for each stroke
 def find_bounces(points):
+    '''
+    :param points:      Points played in instance
+    :return: bounces:   Detected positions of bounces
+    '''
     bounces = []
     for point in points:
         point_bounces = []
         shots_made = 0
         for stroke in point:
+            # Assume stroke is longer than 10 frames
             if stroke.shape[0] > 10:
                 z = stroke[:, 2]
                 minimas = argrelextrema(z, np.less)[0]
                 if len(minimas) == 0:
                     point_bounces.append(np.reshape(np.array([0, 0, 0]), [1, 3]))
+                # Assume first shot is a serve
                 elif shots_made == 0:
                     values = z[minimas]
                     argmin1 = np.argmin(values)
@@ -591,6 +599,7 @@ def find_bounces(points):
                     bounce[1, 2] = 0
                     point_bounces.append(bounce)
                     shots_made += 1
+                # Otherwise detect one bounce
                 else:
                     values = z[minimas]
                     argmin = np.argmin(values)
@@ -602,8 +611,20 @@ def find_bounces(points):
         bounces.append(point_bounces)
     return bounces
 
-# Interpolate positions of missing points
+# Interpolate positions of missing points, bicubic interpolation
 def interpolate_missing(a,b,c,d,t0,t1,t2,t3):
+    '''
+    Takes four points with corresponding weight for bicubic interpolation
+    :param a:
+    :param b:
+    :param c:
+    :param d:
+    :param t0:
+    :param t1:
+    :param t2:
+    :param t3:
+    :return:
+    '''
     matinv = np.linalg.inv([[1,t0,t0**2,t0**3],
                         [1,t1,t1**2,t1**3],
                         [1,t2,t2**2,t2**3],
@@ -616,6 +637,34 @@ def interpolate_missing(a,b,c,d,t0,t1,t2,t3):
     for i in range(missing.shape[0]):
         missing[i,:] = coeff@np.array([1,t0+i,(t0+i)**2,(t0+i)**3])
     return missing
+
+# Create artificial ball movement
+def create_trace(P1,P2):
+    bp3d1 = [[x/33-0.12,1.525-x**2/10000,0.3*abs(math.cos(2*math.pi*x/100)),1] for x in range(100)]
+    bp3d2 = [[bp3d1[len(bp3d1)-1][0]-0.01-x/33,bp3d1[len(bp3d1)-1][1], 0.3 * abs(math.cos(2 * math.pi * x / 350)),1] for x in range(100)]
+    bp3d = bp3d1 + bp3d2
+    bp3d = np.transpose(np.array(bp3d))
+    p1 = pflat(np.matmul(P1,bp3d))
+    p2 = pflat(np.matmul(P2,bp3d))
+    return np.transpose(p1),np.transpose(p2)
+
+# Create artificial table position
+def table_position(height,width):
+    add1 = 0
+    add2 = 40
+    p1 = [[2*width / 10, height*4/10, 1],
+          [8*width/10, height*4/10, 1],
+          [9 * width / 10, height / 10, 1],
+          [1 * width / 10, height / 10, 1],
+          [5 * width / 10, height / 10+add1, 1],
+          [5 * width / 10, height *4/ 10+add2, 1]]
+    p2 = [[480,560, 1],
+          [1040,360, 1],
+          [800, 80, 1],
+          [160,360, 1],
+          [420,260, 1],
+          [764, 540, 1]]
+    return np.array(p1), np.array(p2)
 
 # h = 700
 # w = 1280
