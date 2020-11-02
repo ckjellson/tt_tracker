@@ -4,9 +4,23 @@ Tracking a table tennis ball in 3D using two cameras, and analyzing the result. 
 
 This project is not optimized for extended use, but rather showcases an idea for how OpenCV and computer vision can in a simple way be applied to analyze table tennis games. It has only been tested on videos captured at 720p, 30 fps on two iphones, and might need changes to work well for other onfigurations.
 
-1. [Demo](#demo)
-2. [How to use](#usage)
-3. [Further improvements](#improvements)
+1. [Overview](#overview)
+2. [Demo](#demo)
+3. [How to use](#usage)
+4. [Further improvements](#improvements)
+
+## Overview
+
+* **analysis_functions.py** - Contains the `Analyzer` class, which computes 3D tracks, strokes, points etc. and visualization functions.
+Contains functions for camera calibration, trilateration, interpolation, visualization, etc.
+
+* **balltracker.py** - Script that uses process_video to find ball positions in each frame of two videos, and storing these positions in data-folder.
+
+* **crop_video.py** - Script for cropping and syncing two videos so that they are of the same length, and each two frames are approximately from the same point in time.
+
+* **demo.py** - Script demonstrating usage of Analyzer-class, and doing visualization.
+
+* **process_video.py** - Contains functions for detecting a table tennis ball in each frame of a video.
 
 ## Demo
 
