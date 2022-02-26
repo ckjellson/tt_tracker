@@ -1,16 +1,3 @@
 .idea/
 .ipynb_checkpoints/
 __pycache__/
-.idea/.name
-.idea/inspectionProfiles/Project_Default.xml
-.idea/inspectionProfiles/profiles_settings.xml
-.idea/misc.xml
-.idea/modules.xml
-.idea/tt_tracker.iml
-.idea/workspace.xml
-.ipynb_checkpoints/ball_recog_model-checkpoint.ipynb
-__pycache__/analysis_functions.cpython-37.pyc
-videos/outside1.mp4
-videos/outside2.mp4
-videos_original/out_a_full.mp4
-videos_original/out_b_full.mp4
