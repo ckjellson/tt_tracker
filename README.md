@@ -12,9 +12,9 @@ This project is not optimized for extended use, but rather showcases an idea for
 ## Overview
 
 * **analysis_functions.py** - Contains the `Analyzer` class, which computes 3D tracks, strokes, points etc. and visualization functions.
-Contains functions for camera calibration, trilateration, interpolation, visualization, etc.
+Also contains functions for camera calibration, trilateration, interpolation, visualization, etc.
 
-* **balltracker.py** - Script that uses process_video to find ball positions in each frame of two videos, and storing these positions in data-folder.
+* **balltracker.py** - Script that uses process_video.py to find ball positions in each frame of two videos, and storing these positions in the data-directory.
 
 * **crop_video.py** - Script for cropping and syncing two videos so that they are of the same length, and each two frames are approximately from the same point in time.
 
@@ -78,13 +78,13 @@ Create a new folder called "videos_original" in the working directory and store 
 
 ### Step 3: Crop (crop_video.py)
 
-Create a new folder called "videos" in the working directory. Assign the variable vidname in crop_video.py a name of the instance that will be used to store the data later. Then run the script.
+Create a new folder called "videos" in the working directory. Assign the variable video_name in crop_video.py a name of the instance that will be used to store the data later. Then run the script.
 
 The function will open a window which shows the current frame from each camera. Press 1 or 2 to run a camera forward. When a synced position in the video has been reached, press esc. and the script will save the ramainder of the videos until one has no more frames into the "videos"-folder. This ensures equal length of the two videos.
 
 ### Step 4: Process videos (balltracker.py)
 
-Set vidname to the chosen instance name in balltracker.py and then run the script. This will prompt you to locate corners and net positions in both videos. In the window that appears, double-click on the corner points and net positions in the order they appear here: (i.e. clock-wise from the top left to the bottom left, and then the top of the net, from bottom to top)
+Set video_name to the chosen instance name in balltracker.py and then run the script. This will prompt you to locate corners and net positions in both videos. In the window that appears, double-click on the corner points and net positions in the order they appear here: (i.e. clock-wise from the top left to the bottom left, and then the top of the net, from bottom to top)
 
 ![camera1_corner](https://user-images.githubusercontent.com/37980849/97461066-aa8d0480-193d-11eb-9815-7282e87ac035.PNG)
 
@@ -92,7 +92,7 @@ After doing this the videos will be processed, and the detected position in each
 
 ### Step 5: Analyze result (demo.py)
 
-In demo.py set vidname to the name of your instance, and then choose to run the desired function.
+In demo.py set video_name to the name of your instance, and then choose to run the desired function.
 
 ## Improvements
 
